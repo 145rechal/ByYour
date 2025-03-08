@@ -1,0 +1,15 @@
+{
+    "files.associations": {
+        "spi.h": "c",
+        "gpio.h": "c",
+        "ugui.h": "c",
+        "main.h": "c",
+        "adc.h": "c",
+        "tim.h": "c",
+        "type_traits": "c",
+        "usart.h": "c",
+        "lcd.h": "c",
+        "stdio.h": "c",
+        "string.h": "c"
+    }
+}

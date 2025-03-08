@@ -1,0 +1,11 @@
+{
+    "files.associations": {
+        "rtc.h": "c",
+        "tim.h": "c",
+        "i2c.h": "c",
+        "adc.h": "c",
+        "led.h": "c",
+        "usart.h": "c",
+        "string.h": "c"
+    }
+}
