@@ -41,6 +41,8 @@ void OLED_DrawTriangle(uint8_t X0, uint8_t Y0, uint8_t X1, uint8_t Y1, uint8_t X
 void OLED_DrawCircle(uint8_t X, uint8_t Y, uint8_t Radius, uint8_t IsFilled);
 void OLED_DrawEllipse(uint8_t X, uint8_t Y, uint8_t A, uint8_t B, uint8_t IsFilled);
 void OLED_DrawArc(uint8_t X, uint8_t Y, uint8_t Radius, int16_t StartAngle, int16_t EndAngle, uint8_t IsFilled);
+void OLED_ClearPoint(uint8_t X, uint8_t Y);
+void OLED_FillRect(uint8_t x, uint8_t y, uint8_t width, uint8_t height);
 
 #endif
 

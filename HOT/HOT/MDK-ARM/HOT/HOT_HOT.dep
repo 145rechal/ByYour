@@ -1,7 +1,7 @@
 Dependencies for Project 'HOT', Target 'HOT': (DO NOT MODIFY !)
 CompilerVersion: 5060960::V5.06 update 7 (build 960)::.\ARMCC
 F (startup_stm32g030xx.s)(0x67F526FA)(--cpu Cortex-M0+ -g --apcs=interwork -I.\RTE\_HOT-IF:\ProgramFile\MDK\Packs\ARM\CMSIS\5.9.0\CMSIS\Core\Include-IF:\ProgramFile\MDK\Packs\Keil\STM32G0xx_DFP\1.5.0\Drivers\CMSIS\Device\ST\STM32G0xx\Include--pd "__UVISION_VERSION SETA 538" --pd "_RTE_ SETA 1" --pd "STM32G030xx SETA 1" --pd "_RTE_ SETA 1"--list startup_stm32g030xx.lst --xref -o hot\startup_stm32g030xx.o --depend hot\startup_stm32g030xx.d)
-F (../Core/Src/main.c)(0x67F62576)(--c99 -c --cpu Cortex-M0+ -g -O3 --apcs=interwork --split_sections -I ../Core/Inc -I ../Drivers/STM32G0xx_HAL_Driver/Inc -I ../Drivers/STM32G0xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32G0xx/Include -I ../Drivers/CMSIS/Include -I ../Hardware-I.\RTE\_HOT-IF:\ProgramFile\MDK\Packs\ARM\CMSIS\5.9.0\CMSIS\Core\Include-IF:\ProgramFile\MDK\Packs\Keil\STM32G0xx_DFP\1.5.0\Drivers\CMSIS\Device\ST\STM32G0xx\Include-D__UVISION_VERSION="538" -D_RTE_ -DSTM32G030xx -D_RTE_ -DUSE_HAL_DRIVER -DSTM32G030xx-o hot\main.o --omf_browse hot\main.crf --depend hot\main.d)
+F (../Core/Src/main.c)(0x68006B08)(--c99 -c --cpu Cortex-M0+ -g -O3 --apcs=interwork --split_sections -I ../Core/Inc -I ../Drivers/STM32G0xx_HAL_Driver/Inc -I ../Drivers/STM32G0xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32G0xx/Include -I ../Drivers/CMSIS/Include -I ../Hardware-I.\RTE\_HOT-IF:\ProgramFile\MDK\Packs\ARM\CMSIS\5.9.0\CMSIS\Core\Include-IF:\ProgramFile\MDK\Packs\Keil\STM32G0xx_DFP\1.5.0\Drivers\CMSIS\Device\ST\STM32G0xx\Include-D__UVISION_VERSION="538" -D_RTE_ -DSTM32G030xx -D_RTE_ -DUSE_HAL_DRIVER -DSTM32G030xx-o hot\main.o --omf_browse hot\main.crf --depend hot\main.d)
 I (../Core/Inc/main.h)(0x67F1F1D4)
 I (../Drivers/STM32G0xx_HAL_Driver/Inc/stm32g0xx_hal.h)(0x6736CF5A)
 I (../Core/Inc/stm32g0xx_hal_conf.h)(0x67F4B551)
@@ -44,7 +44,7 @@ I (../Core/Inc/dma.h)(0x67F39670)
 I (../Core/Inc/tim.h)(0x67F1F3A7)
 I (../Core/Inc/usart.h)(0x67F4B550)
 I (../Core/Inc/gpio.h)(0x67C864D2)
-I (../Hardware/OLED.h)(0x676AB9EC)
+I (../Hardware/OLED.h)(0x67FE6CF9)
 I (../Hardware/OLED_Data.h)(0x676E483D)
 I (F:\ProgramFile\MDK\Core\ARM\ARMCC\include\math.h)(0x60252378)
 I (F:\ProgramFile\MDK\Core\ARM\ARMCC\include\stdlib.h)(0x60252374)
@@ -1027,7 +1027,7 @@ I (../Drivers/STM32G0xx_HAL_Driver/Inc/stm32g0xx_hal_tim.h)(0x6736CF5A)
 I (../Drivers/STM32G0xx_HAL_Driver/Inc/stm32g0xx_hal_tim_ex.h)(0x6736CF5A)
 I (../Drivers/STM32G0xx_HAL_Driver/Inc/stm32g0xx_hal_uart.h)(0x6736CF5A)
 I (../Drivers/STM32G0xx_HAL_Driver/Inc/stm32g0xx_hal_uart_ex.h)(0x6736CF5A)
-F (..\Hardware\OLED.c)(0x67F1E639)(--c99 -c --cpu Cortex-M0+ -g -O3 --apcs=interwork --split_sections -I ../Core/Inc -I ../Drivers/STM32G0xx_HAL_Driver/Inc -I ../Drivers/STM32G0xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32G0xx/Include -I ../Drivers/CMSIS/Include -I ../Hardware-I.\RTE\_HOT-IF:\ProgramFile\MDK\Packs\ARM\CMSIS\5.9.0\CMSIS\Core\Include-IF:\ProgramFile\MDK\Packs\Keil\STM32G0xx_DFP\1.5.0\Drivers\CMSIS\Device\ST\STM32G0xx\Include-D__UVISION_VERSION="538" -D_RTE_ -DSTM32G030xx -D_RTE_ -DUSE_HAL_DRIVER -DSTM32G030xx-o hot\oled.o --omf_browse hot\oled.crf --depend hot\oled.d)
+F (..\Hardware\OLED.c)(0x67FE6CEF)(--c99 -c --cpu Cortex-M0+ -g -O3 --apcs=interwork --split_sections -I ../Core/Inc -I ../Drivers/STM32G0xx_HAL_Driver/Inc -I ../Drivers/STM32G0xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32G0xx/Include -I ../Drivers/CMSIS/Include -I ../Hardware-I.\RTE\_HOT-IF:\ProgramFile\MDK\Packs\ARM\CMSIS\5.9.0\CMSIS\Core\Include-IF:\ProgramFile\MDK\Packs\Keil\STM32G0xx_DFP\1.5.0\Drivers\CMSIS\Device\ST\STM32G0xx\Include-D__UVISION_VERSION="538" -D_RTE_ -DSTM32G030xx -D_RTE_ -DUSE_HAL_DRIVER -DSTM32G030xx-o hot\oled.o --omf_browse hot\oled.crf --depend hot\oled.d)
 I (../Drivers/STM32G0xx_HAL_Driver/Inc/stm32g0xx_hal.h)(0x6736CF5A)
 I (../Core/Inc/stm32g0xx_hal_conf.h)(0x67F4B551)
 I (../Drivers/STM32G0xx_HAL_Driver/Inc/stm32g0xx_hal_rcc.h)(0x6736CF5A)
@@ -1064,7 +1064,7 @@ I (../Drivers/STM32G0xx_HAL_Driver/Inc/stm32g0xx_hal_tim.h)(0x6736CF5A)
 I (../Drivers/STM32G0xx_HAL_Driver/Inc/stm32g0xx_hal_tim_ex.h)(0x6736CF5A)
 I (../Drivers/STM32G0xx_HAL_Driver/Inc/stm32g0xx_hal_uart.h)(0x6736CF5A)
 I (../Drivers/STM32G0xx_HAL_Driver/Inc/stm32g0xx_hal_uart_ex.h)(0x6736CF5A)
-I (..\Hardware\OLED.h)(0x676AB9EC)
+I (..\Hardware\OLED.h)(0x67FE6CF9)
 I (..\Hardware\OLED_Data.h)(0x676E483D)
 I (F:\ProgramFile\MDK\Core\ARM\ARMCC\include\string.h)(0x6025237E)
 I (F:\ProgramFile\MDK\Core\ARM\ARMCC\include\math.h)(0x60252378)
@@ -1073,5 +1073,5 @@ I (F:\ProgramFile\MDK\Core\ARM\ARMCC\include\stdarg.h)(0x60252376)
 F (..\Hardware\OLED_Data.c)(0x67F1E00A)(--c99 -c --cpu Cortex-M0+ -g -O3 --apcs=interwork --split_sections -I ../Core/Inc -I ../Drivers/STM32G0xx_HAL_Driver/Inc -I ../Drivers/STM32G0xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32G0xx/Include -I ../Drivers/CMSIS/Include -I ../Hardware-I.\RTE\_HOT-IF:\ProgramFile\MDK\Packs\ARM\CMSIS\5.9.0\CMSIS\Core\Include-IF:\ProgramFile\MDK\Packs\Keil\STM32G0xx_DFP\1.5.0\Drivers\CMSIS\Device\ST\STM32G0xx\Include-D__UVISION_VERSION="538" -D_RTE_ -DSTM32G030xx -D_RTE_ -DUSE_HAL_DRIVER -DSTM32G030xx-o hot\oled_data.o --omf_browse hot\oled_data.crf --depend hot\oled_data.d)
 I (..\Hardware\OLED_Data.h)(0x676E483D)
 I (F:\ProgramFile\MDK\Core\ARM\ARMCC\include\stdint.h)(0x6025237E)
-F (..\Hardware\OLED.h)(0x676AB9EC)()
+F (..\Hardware\OLED.h)(0x67FE6CF9)()
 F (..\Hardware\OLED_Data.h)(0x676E483D)()
