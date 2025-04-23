@@ -61,10 +61,14 @@ typedef struct
   uint8_t height; // 区域高度
 } CursorPos_t;
 
-// 修改光标位置定义，使宽度与文本匹配
-CursorPos_t cursor_positions[] = {
-    {40, 35, 36, 8}, // Target位置 - 宽度36对应6个6×8字体
-    {40, 50, 42, 8}, // Reality位置 - 宽度42对应7个6×8字体
+// 定义所有可选位置(根据实际显示位置调整)
+const CursorPos_t cursor_positions[] = {
+    {20, 24, 24, 8}, // HOT1位置 (4个字符 * 6像素宽度)
+    {2, 35, 42, 8},  // HOT1 Target位置 ("Target:" + 2位数字)
+    {2, 50, 42, 8},  // HOT1 Reality位置 ("Reality:" + 2位数字)
+    {84, 24, 24, 8}, // HOT2位置 (4个字符 * 6像素宽度)
+    {65, 35, 42, 8}, // HOT2 Target位置 ("Target:" + 2位数字)
+    {65, 50, 42, 8}  // HOT2 Reality位置 ("Reality:" + 2位数字)
 };
 
 #define CURSOR_POS_NUM (sizeof(cursor_positions) / sizeof(cursor_positions[0]))
@@ -84,15 +88,8 @@ uint8_t current_hot = 0; // 0:HOT1子菜单 1:HOT2子菜单
 
 // 添加定时计数变量
 static uint16_t wake_long_press_cnt = 0; // WAKE按键长按计数器
-#define LONG_PRESS_CNT 1800              // 长按时间计数阈值(5秒,定时器1ms中断)
+#define LONG_PRESS_CNT 3000              // 长按时间计数阈值(5秒,定时器1ms中断)
 uint8_t menu_switching = 0;              // 添加菜单切换标志，防止重复触发
-// 添加长按检测变量
-static uint16_t key1_long_press_cnt = 0; // KEY1长按计数器
-static uint16_t key2_long_press_cnt = 0; // KEY2长按计数器
-#define KEY_LONG_PRESS_TIME 300          // 长按检测时间阈值(约300ms)
-#define KEY_LONG_PRESS_REPEAT 50         // 长按重复触发时间(约50ms)
-static uint16_t key1_repeat_cnt = 0;     // KEY1重复计数器
-static uint16_t key2_repeat_cnt = 0;     // KEY2重复计数器
 
 // 添加参数编辑相关变量
 uint8_t param_editing = 0; // 参数编辑状态标志
@@ -170,22 +167,6 @@ PID_Object PID_Ctrl2; // PID对象
 uint16_t PWM1 = 0;
 uint16_t PWM2 = 0;
 
-// 添加滚动文本变量
-#define SCROLL_TEXT_MAX_LENGTH 50                                   // 最大滚动文本长度
-char scroll_text[SCROLL_TEXT_MAX_LENGTH] = "Created by Rachel_123"; // 滚动文本内容
-int16_t scroll_position = 12;                                       // 初始滚动位置
-uint16_t scroll_delay_cnt = 0;                                      // 滚动延迟计数器
-#define SCROLL_DELAY 50                                             // 滚动间隔时间(ms)
-
-// 添加温度曲线绘制相关变量
-#define CURVE_POINTS 64             // 曲线上的点数
-#define CURVE_UPDATE_PERIOD 20      // 曲线更新周期(20ms)
-float temp_history[CURVE_POINTS];   // 实际温度历史数据
-float target_history[CURVE_POINTS]; // 目标温度历史数据
-uint8_t curve_index = 0;            // 当前插入点的索引
-uint16_t curve_update_cnt = 0;      // 曲线更新计数器
-uint8_t is_reality_page = 0;        // 是否在reality页面标志
-
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -197,58 +178,74 @@ void SystemClock_Config(void);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 
-void OLED_ShowFirstScreen(void)
+void OLED_DrawInterface(void)
 {
+  uint8_t i;
+
+  // 1. 清屏并初始化
   OLED_Clear();
+  OLED_Update();
 
-  // 居中显示标题 "HOT"
-  uint8_t title_x = (128 - 8 * 3) / 2;
-  OLED_ShowString(title_x, 0, "HOT", OLED_8X16);
+  // 2. 显示标题 "HOT" 在顶部中间
+  OLED_ShowString(52, 0, "HOT", OLED_8X16);
+  OLED_Update();
 
-  // 初始显示作者信息（后续会滚动）
-  OLED_ShowString(scroll_position, 16, scroll_text, OLED_6X8);
-
-  // 绘制分隔线 - 这行很重要，确保它不被注释掉
-  for (uint8_t i = 12; i < 116; i++)
+  // 3. 加粗的虚线分隔 (每2像素画一个点)
+  for (i = 0; i < 128; i += 2)
   {
-    OLED_DrawPoint(i, 25);
+    for (uint8_t j = 0; j < 2; j++)
+    {
+      OLED_DrawPoint(i, 16 + j);
+    }
   }
+  OLED_Update();
 
-  // 计算Target和Reality的居中位置
-  uint8_t content_x = 40;
+  // 4. 加粗边框线和分隔线
+  for (i = 16; i < 64; i++)
+  {
+    // 左边框加粗
+    OLED_DrawPoint(0, i);
+    OLED_DrawPoint(1, i);
 
-  // 显示Target和Reality（居中）
-  OLED_ShowString(content_x, 35, "Target", OLED_6X8);
-  OLED_ShowString(content_x, 50, "Reality", OLED_6X8);
+    // 中间分隔线加粗
+    OLED_DrawPoint(63, i);
+    OLED_DrawPoint(64, i);
 
+    // // 右边框加粗
+    // OLED_DrawPoint(126, i);
+    // OLED_DrawPoint(127, i);
+  }
+  OLED_Update();
+
+  // 5. 左侧HOT1列 (稍微向右移动以避免边框)
+  OLED_ShowString(20, 24, "HOT1", OLED_6X8);
+  OLED_ShowString(2, 35, "Target:", OLED_6X8);
+  OLED_ShowString(2, 50, "Reality:", OLED_6X8);
+  OLED_ShowNum(50, 35, hot1_target, 2, OLED_6X8);
+  OLED_ShowNum(50, 50, hot1_reality, 2, OLED_6X8);
+  OLED_Update();
+
+  // 6. 右侧HOT2列 (稍微向左移动以避免边框)
+  OLED_ShowString(84, 24, "HOT2", OLED_6X8);
+  OLED_ShowString(65, 35, "Target:", OLED_6X8);
+  OLED_ShowString(65, 50, "Reality:", OLED_6X8);
+  OLED_ShowNum(112, 35, hot2_target, 2, OLED_6X8);
+  OLED_ShowNum(112, 50, hot2_reality, 2, OLED_6X8);
   OLED_Update();
 }
 
+/* 添加光标显示函数 */
 void ShowCursor(uint8_t position_index)
 {
   static uint8_t last_position = 0xFF; // 初始化为无效值
 
-  // 防止索引越界
-  if (position_index >= CURSOR_POS_NUM)
+  // 如果有上一个位置，先恢复原来的显示
+  if (last_position != 0xFF)
   {
-    return;
-  }
-
-  // 如果位置发生变化，先清除旧光标所在区域
-  if (last_position != position_index && last_position < CURSOR_POS_NUM)
-  {
-    // 恢复旧位置的正常显示
-    OLED_ClearArea(cursor_positions[last_position].x,
-                   cursor_positions[last_position].y,
-                   cursor_positions[last_position].width,
-                   cursor_positions[last_position].height);
-
-    // 重新绘制该区域的内容
-    uint8_t content_x = 40;
-    if (last_position == 0)
-      OLED_ShowString(content_x, 35, "Target", OLED_6X8);
-    else if (last_position == 1)
-      OLED_ShowString(content_x, 50, "Reality", OLED_6X8);
+    OLED_ReverseArea(cursor_positions[last_position].x,
+                     cursor_positions[last_position].y,
+                     cursor_positions[last_position].width,
+                     cursor_positions[last_position].height);
   }
 
   // 显示新位置的光标
@@ -258,123 +255,6 @@ void ShowCursor(uint8_t position_index)
                    cursor_positions[position_index].height);
 
   last_position = position_index;
-
-  // 更新显示
-  OLED_Update();
-}
-
-void OLED_DrawHeatingIcon(uint8_t x, uint8_t y, uint8_t is_heating)
-{
-  if (is_heating)
-  {
-    // 绘制加热状态图标（小火焰）
-    OLED_DrawPoint(x + 2, y);
-    OLED_DrawPoint(x + 3, y);
-    OLED_DrawPoint(x + 1, y + 1);
-    OLED_DrawPoint(x + 2, y + 1);
-    OLED_DrawPoint(x + 3, y + 1);
-    OLED_DrawPoint(x + 4, y + 1);
-    OLED_DrawPoint(x, y + 2);
-    OLED_DrawPoint(x + 1, y + 2);
-    OLED_DrawPoint(x + 2, y + 2);
-    OLED_DrawPoint(x + 3, y + 2);
-    OLED_DrawPoint(x + 4, y + 2);
-    OLED_DrawPoint(x + 5, y + 2);
-    OLED_DrawPoint(x + 2, y + 3);
-    OLED_DrawPoint(x + 3, y + 3);
-  }
-  else
-  {
-    // 清除图标区域
-    for (uint8_t i = 0; i < 6; i++)
-    {
-      for (uint8_t j = 0; j < 4; j++)
-      {
-        OLED_ClearPoint(x + i, y + j);
-      }
-    }
-  }
-  OLED_Update();
-}
-void OLED_UpdateScrollText(void)
-{
-  // 清除整个滚动文本区域，避免拖影
-  OLED_ClearArea(0, 16, 128, 8);
-
-  // 显示滚动文本
-  OLED_ShowString(scroll_position, 16, scroll_text, OLED_6X8);
-
-  // 更新滚动位置
-  scroll_position--;
-
-  // 如果文本滚动出屏幕，重新从右侧开始
-  int threshold = -(strlen(scroll_text) * 6);
-  if (scroll_position < threshold)
-  {
-    scroll_position = 128;
-  }
-
-  // 仅更新滚动文本区域
-  OLED_UpdateArea(0, 16, 128, 8);
-
-  // 降低光标更新频率，减少屏幕闪烁
-  static uint8_t cursor_update_count = 0;
-  cursor_update_count++;
-  if (cursor_update_count >= 10) // 增加到10，减少更新频率
-  {
-    cursor_update_count = 0;
-    if (menu_level == 0) // 只在主菜单时更新光标
-    {
-      ShowCursor(current_cursor);
-    }
-  }
-}
-
-// 绘制垂直圆弧数字选择器
-void OLED_ShowNumberSelector(uint16_t current_value)
-{
-  // 清除显示区域 - 垂直区域
-  OLED_ClearArea(50, 10, 78, 50);
-
-  // 计算要显示的5个值（当前值和其前后各两个值）
-  uint16_t values[5];
-  for (int i = 0; i < 5; i++)
-  {
-    values[i] = current_value - 2 + i;
-  }
-
-  // 垂直圆弧的布局 - 纵向排列
-  uint8_t y_positions[5] = {15, 25, 35, 45, 55}; // 垂直排列，从上到下
-
-  // 水平位置形成弧度 - 改为朝向Target文本方向的弧形
-  uint8_t x_positions[5] = {75, 70, 65, 70, 75}; // 形成朝左的垂直圆弧效果
-
-  // 显示所有数字
-  for (int i = 0; i < 5; i++)
-  {
-    // 中间值用反相显示
-    if (i == 2)
-    {
-      // 先绘制背景
-      OLED_FillRect(x_positions[i] - 2, y_positions[i] - 1, 18, 10);
-      // 用清除点的方式绘制数字（形成反相效果）
-      char num_str[3];
-      sprintf(num_str, "%d", values[i]);
-      for (int j = 0; j < strlen(num_str); j++)
-      {
-        OLED_ShowChar(x_positions[i] + j * 6, y_positions[i], num_str[j], OLED_6X8);
-      }
-    }
-    else
-    {
-      // 普通显示其他数字
-      OLED_ShowNum(x_positions[i], y_positions[i], values[i], 2, OLED_6X8);
-    }
-  }
-
-  // 左侧显示"Target"
-  OLED_ShowString(15, 35, "Target:", OLED_6X8);
-
   OLED_Update();
 }
 
@@ -420,91 +300,6 @@ HAL_StatusTypeDef Flash_Write_Data(uint32_t Address, uint32_t *Data, uint16_t Da
   return status;
 }
 
-// 绘制温度曲线函数
-void OLED_DrawTempCurve(void)
-{
-  // 清除曲线区域
-  OLED_ClearArea(0, 18, 128, 46);
-
-  // 绘制坐标轴
-  OLED_DrawLine(0, 63, 127, 63); // X轴
-  OLED_DrawLine(0, 18, 0, 63);   // Y轴
-
-  // 绘制刻度
-  for (int i = 0; i < 5; i++)
-  {
-    uint8_t y = 63 - i * 10;
-    OLED_DrawLine(0, y, 3, y); // Y轴刻度
-  }
-
-  // 计算温度映射的参数
-  float min_temp = 15.0f;                      // 最低显示温度
-  float max_temp = 85.0f;                      // 最高显示温度
-  float scale = 45.0f / (max_temp - min_temp); // 计算温度到像素的缩放比例
-
-  // 绘制实际温度曲线
-  for (int i = 0; i < CURVE_POINTS - 1; i++)
-  {
-    int x1 = i * 2;
-    int x2 = (i + 1) * 2;
-
-    // 计算y坐标（OLED屏幕原点在左上角，所以需要反向计算）
-    int y1 = 63 - (int)((temp_history[i] - min_temp) * scale);
-    int y2 = 63 - (int)((temp_history[i + 1] - min_temp) * scale);
-
-    // 限制y坐标范围
-    if (y1 < 18)
-      y1 = 18;
-    if (y1 > 63)
-      y1 = 63;
-    if (y2 < 18)
-      y2 = 18;
-    if (y2 > 63)
-      y2 = 63;
-
-    // 绘制线段
-    OLED_DrawLine(x1, y1, x2, y2);
-  }
-
-  // 绘制目标温度曲线（使用虚线或不同模式）
-  for (int i = 0; i < CURVE_POINTS - 1; i++)
-  {
-    int x1 = i * 2;
-    int x2 = (i + 1) * 2;
-
-    // 计算y坐标
-    int y1 = 63 - (int)((target_history[i] - min_temp) * scale);
-    int y2 = 63 - (int)((target_history[i + 1] - min_temp) * scale);
-
-    // 限制y坐标范围
-    if (y1 < 18)
-      y1 = 18;
-    if (y1 > 63)
-      y1 = 63;
-    if (y2 < 18)
-      y2 = 18;
-    if (y2 > 63)
-      y2 = 63;
-
-    // 绘制虚线（每隔一定距离绘制点）
-    if (i % 2 == 0)
-    {
-      OLED_DrawPoint(x1, y1);
-    }
-  }
-
-  // 显示PWM值
-  OLED_ShowString(5, 5, "PWM:", OLED_6X8);
-  OLED_ShowNum(35, 5, PWM1, 3, OLED_6X8);
-
-  // 显示图例
-  OLED_ShowString(70, 5, "T:", OLED_6X8);
-  OLED_ShowNum(82, 5, (uint16_t)hot1_reality, 2, OLED_6X8);
-
-  // 更新显示
-  OLED_Update();
-}
-
 /*计算出当前NTC热敏电阻的阻值*/
 float ADC_GetResistance(uint32_t adc_value)
 {
@@ -512,7 +307,7 @@ float ADC_GetResistance(uint32_t adc_value)
 }
 
 /*根据方程计算出当前的温度值*/
-float Resistance2Temerature(float Rsistance)
+float Resistance2Temerature(uint16_t Rsistance)
 {
   float B = 3950.0f;   // B值
   float R0 = 10000.0f; // 25度时的电阻值
@@ -628,9 +423,9 @@ float PID_calculate(PID_Object *pid, float desired, float current)
   pid->error_last = pid->error;
   pid->error_last_last = pid->error_last;
 
-  if (pid->out >= 750)
+  if (pid->out >= 800)
   {
-    pid->out = 750;
+    pid->out = 800;
   } // 限制最大最小占空比
   if (pid->out <= 10)
   {
@@ -680,6 +475,7 @@ int main(void)
   HAL_TIM_Base_Start_IT(&htim3);
   // 启动TIM1 PWM输出
   HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1); // 启动TIM1通道1的PWM输出
+  HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_2); // 启动TIM1通道2的PWM输出
   // 从Flash读取温度参数
   uint64_t temp1 = *(uint64_t *)FLASH_TARGET_ADDR;
   uint64_t temp2 = *(uint64_t *)(FLASH_TARGET_ADDR + 8);
@@ -698,8 +494,7 @@ int main(void)
   OLED_Init();
   // 清屏
   OLED_Clear();
-  // 显示第一个界面
-  OLED_ShowFirstScreen();
+  OLED_DrawInterface();
   HAL_Delay(10); // 等待界面显示稳定
   ShowCursor(0); // 显示初始光标位置
 
@@ -721,15 +516,18 @@ int main(void)
   HAL_ADCEx_Calibration_Start(&hadc1); // ADC校准
   HAL_ADC_Start_DMA(&hadc1, (uint32_t *)adc_buf, ADC_CHANNEL_NUM);
 
-  PID_INIT(&PID_Ctrl1, 300.0f, 70.0f, 0.0f, 100.0f); // PID
+  PID_INIT(&PID_Ctrl1, 300.0f, 70.0f, 0.0f, 100.0f); // 第一个PID
+  PID_INIT(&PID_Ctrl2, 250.0f, 50.0f, 0.0f, 100.0f); // 第二个PID
 
   // 软启动过程
-  for (uint16_t i = 0; i < SOFT_START_MAX; i++)
-  {
-    PWM1 = i;
-    __HAL_TIM_SetCompare(&htim1, TIM_CHANNEL_1, PWM1);
-    HAL_Delay(1);
-  }
+   for (uint16_t i = 0; i < SOFT_START_MAX; i++)
+   {
+     PWM1 = i;
+     PWM2 = i;
+     __HAL_TIM_SetCompare(&htim1, TIM_CHANNEL_1, PWM1);
+    __HAL_TIM_SetCompare(&htim1, TIM_CHANNEL_2, PWM2);
+     HAL_Delay(1);
+	 }
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -802,90 +600,69 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
         wake_pressed = 1;
         wake_long_press_cnt = 0;
 
-        // 在主菜单状态下（初始页面）
-        if (menu_level == 0 && !menu_switching)
+        // 判断是否在参数编辑模式
+        if (param_editing)
         {
-          menu_level = 1; // 进入子菜单
+          // 退出参数编辑模式
+          param_editing = 0;
 
-          // 进入Target页面
-          if (current_cursor == 0) // 当前在Target位置
-          {
-            // 进入Target页面
-            OLED_Clear();
-            // 使用数字选择器显示目标温度
-            OLED_ShowNumberSelector(hot1_target);
-            OLED_Update();
-          }
-          else if (current_cursor == 1) // 当前在Reality位置
-          {
-            // 进入Reality页面
-            OLED_Clear();
-            // 初始化温度历史数据
-            is_reality_page = 1; // 设置在reality页面标志
-
-            // 初始化历史数据数组
-            for (int i = 0; i < CURVE_POINTS; i++)
-            {
-              temp_history[i] = hot1_reality;
-              target_history[i] = hot1_target;
-            }
-
-            // 绘制初始曲线
-            OLED_DrawTempCurve();
-
-            menu_switching = 1; // 防止重复触发
-          }
-
-          menu_switching = 1; // 防止重复触发
-        }
-        // 在Target页面下短按wake就保存温度并返回主菜单
-        else if (menu_level == 1 && !menu_switching && current_cursor == 0)
-        {
-          // 保存参数到Flash
+          // 准备保存的数据
           uint32_t flash_data[2];
           flash_data[0] = hot1_target;
           flash_data[1] = hot2_target;
 
+          // 保存到Flash
           if (Flash_Write_Data(FLASH_TARGET_ADDR, flash_data, 2) != HAL_OK)
           {
-            Error_Handler();
+            Error_Handler(); // Flash写入错误处理
           }
 
-          // 返回主菜单
-          menu_level = 0;
-
-          // 重置滚动文本位置，确保返回主菜单时从初始位置开始
-          scroll_position = 12;
-
-          // 重新显示初始界面
-          OLED_ShowFirstScreen();
-          ShowCursor(current_cursor); // 还原原来的光标位置
-
-          menu_switching = 1; // 防止重复触发
+          // 更新显示
+          if (current_hot == 0)
+          {
+            OLED_ShowNum(50, 35, hot1_target, 2, OLED_6X8);
+          }
+          else
+          {
+            OLED_ShowNum(112, 35, hot2_target, 2, OLED_6X8);
+          }
+          OLED_Update();
         }
-        // Reality页面处理保持不变
+        // 不在参数编辑模式时的菜单切换
+        else if (menu_level == 0 && !menu_switching)
+        {
+          // 从主菜单进入子菜单
+          menu_level = 1;
+          current_hot = (current_cursor == 0) ? 0 : 1;
+          current_cursor = (current_hot == 0) ? 1 : 4;
+          ShowCursor(current_cursor);
+        }
+        else if (menu_level == 1 && !menu_switching && !param_editing)
+        {
+          // 在子菜单中且不在编辑状态时，处理Target编辑
+          if (current_cursor == 1 || current_cursor == 4) // Target位置
+          {
+            param_editing = 1;
+            blink_state = 1;
+            blink_cnt = 0;
+          }
+        }
       }
 
-      // 长按处理 - 只保留从Reality页面返回的功能
+      // 按键持续按下时的长按处理
       if (wake_pressed)
       {
         wake_long_press_cnt++;
-        if (wake_long_press_cnt >= LONG_PRESS_CNT) // 达到长按阈值(3秒)
+        if (wake_long_press_cnt >= LONG_PRESS_CNT) // 达到长按时间阈值(5秒)
         {
-          if (menu_level == 1 && !menu_switching && current_cursor == 1) // 在Reality子菜单中
+          if (menu_level == 1 && !menu_switching) // 在子菜单中
           {
             // 返回主菜单
             menu_level = 0;
-            is_reality_page = 0; // 清除在reality页面标志
-
-            // 重置滚动文本位置，确保返回主菜单时从初始位置开始
-            scroll_position = 12;
-
-            // 重新显示初始界面
-            OLED_ShowFirstScreen();
-            ShowCursor(current_cursor); // 还原原来的光标位置
-
-            menu_switching = 1; // 防止重复触发
+            current_cursor = current_hot ? 3 : 0;
+            ShowCursor(current_cursor);
+            menu_switching = 1;
+            param_editing = 0;
           }
           wake_long_press_cnt = LONG_PRESS_CNT; // 防止计数器溢出
         }
@@ -893,11 +670,10 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     }
     else
     {
-      // 按键松开处理保持不变
       wake_pressed = 0;
       wake_filter = 0;
       wake_long_press_cnt = 0;
-      menu_switching = 0; // 清除菜单切换标志
+      menu_switching = 0;
     }
 
     // LED闪烁处理
@@ -909,164 +685,138 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
       HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_7);
     }
 
-    // 修改滚动文本更新处理，只在主菜单时更新滚动文本
-    scroll_delay_cnt++;
-    if (scroll_delay_cnt >= SCROLL_DELAY)
+    // 参数编辑模式下的闪烁处理
+    if (param_editing)
     {
-      scroll_delay_cnt = 0;
-      // 只在主菜单(menu_level==0)时更新滚动文本
-      if (menu_level == 0)
+      blink_cnt++;
+      if (blink_cnt >= BLINK_PERIOD)
       {
-        OLED_UpdateScrollText(); // 调用滚动更新函数
+        blink_cnt = 0;
+        blink_state = !blink_state;
+
+        // 更新显示
+        if (current_hot == 0)
+        {
+          if (blink_state)
+            OLED_ShowNum(50, 35, hot1_target, 2, OLED_6X8);
+          else
+            OLED_ShowString(50, 35, "  ", OLED_6X8);
+        }
+        else
+        {
+          if (blink_state)
+            OLED_ShowNum(112, 35, hot2_target, 2, OLED_6X8);
+          else
+            OLED_ShowString(112, 35, "  ", OLED_6X8);
+        }
+        OLED_Update();
       }
     }
 
-    // 修改KEY1按键处理，添加长按功能
+    // KEY1按键处理(上移/循环)
     if (HAL_GPIO_ReadPin(KEY1_GPIO_Port, KEY1_Pin) == GPIO_PIN_RESET)
     {
       key1_filter++;
       if (key1_filter >= KEY_FILTER_TIME && !key1_pressed)
       {
         key1_pressed = 1;
-        key1_long_press_cnt = 0;
-        key1_repeat_cnt = 0;
-
-        // 短按操作处理（保持原有逻辑）
-        // 在主菜单时进行Target和Reality之间的切换
-        if (menu_level == 0)
+        if (param_editing)
         {
-          // 限制在Target和Reality之间切换
-          if (current_cursor <= 1) // 确保光标在有效范围内
+          // 参数编辑模式下增加温度值
+          if (current_hot == 0)
           {
-            current_cursor = (current_cursor == 0) ? 1 : 0;
-            ShowCursor(current_cursor);
+            if (hot1_target < 99)
+              hot1_target++;
+            OLED_ShowNum(50, 35, hot1_target, 2, OLED_6X8);
           }
-        }
-        // 在Target页面时，直接增加温度值
-        else if (menu_level == 1 && current_cursor == 0)
-        {
-          if (hot1_target < 80)
-            hot1_target++;                      // 限制最大温度
-          OLED_ShowNumberSelector(hot1_target); // 更新数字选择器
-        }
-      }
-
-      // 长按处理
-      if (key1_pressed)
-      {
-        key1_long_press_cnt++;
-
-        // 达到长按阈值且重复计数器达到触发条件
-        if (key1_long_press_cnt >= KEY_LONG_PRESS_TIME)
-        {
-          key1_repeat_cnt++;
-          if (key1_repeat_cnt >= KEY_LONG_PRESS_REPEAT)
+          else
           {
-            key1_repeat_cnt = 0;
-
-            // 长按时的操作（与短按相同，但可以反复执行）
-            // 在主菜单中
-            if (menu_level == 0)
-            {
-              // 限制在Target和Reality之间切换
-              if (current_cursor <= 1)
-              {
-                current_cursor = (current_cursor == 0) ? 1 : 0;
-                ShowCursor(current_cursor);
-              }
-            }
-            // 在Target页面中
-            else if (menu_level == 1 && current_cursor == 0)
-            {
-              if (hot1_target < 80)
-              {
-                hot1_target++;                        // 限制最大温度
-                OLED_ShowNumberSelector(hot1_target); // 更新数字选择器
-              }
-            }
+            if (hot2_target < 99)
+              hot2_target++;
+            OLED_ShowNum(112, 35, hot2_target, 2, OLED_6X8);
           }
+          OLED_Update();
+          blink_state = 1;
+          blink_cnt = 0;
+        }
+        else if (menu_level == 0)
+        {
+          // 主菜单中HOT1和HOT2循环切换
+          current_cursor = (current_cursor == 0) ? 3 : 0; // 在0和3之间循环
+          ShowCursor(current_cursor);
+        }
+        else
+        {
+          // 子菜单中在Target和Reality之间循环切换
+          if (current_hot == 0) // HOT1子菜单
+          {
+            current_cursor = (current_cursor == 1) ? 2 : 1; // 在1和2之间循环
+          }
+          else // HOT2子菜单
+          {
+            current_cursor = (current_cursor == 4) ? 5 : 4; // 在4和5之间循环
+          }
+          ShowCursor(current_cursor);
         }
       }
     }
     else
     {
-      if (key1_pressed)
-      {
-        key1_pressed = 0;
-      }
+      key1_pressed = 0;
       key1_filter = 0;
-      key1_long_press_cnt = 0;
-      key1_repeat_cnt = 0;
     }
 
-    // 修改KEY2按键处理，添加长按功能
+    // KEY2按键处理(下移/循环)
     if (HAL_GPIO_ReadPin(KEY2_GPIO_Port, KEY2_Pin) == GPIO_PIN_RESET)
     {
       key2_filter++;
       if (key2_filter >= KEY_FILTER_TIME && !key2_pressed)
       {
         key2_pressed = 1;
-        key2_long_press_cnt = 0;
-        key2_repeat_cnt = 0;
-
-        // 短按操作处理（保持原有逻辑）
-        if (menu_level == 0)
+        if (param_editing)
         {
-          if (current_cursor <= 1)
+          // 参数编辑模式下减少温度值
+          if (current_hot == 0)
           {
-            current_cursor = (current_cursor == 0) ? 1 : 0;
-            ShowCursor(current_cursor);
+            if (hot1_target > 0)
+              hot1_target--;
+            OLED_ShowNum(50, 35, hot1_target, 2, OLED_6X8);
           }
-        }
-        else if (menu_level == 1 && current_cursor == 0)
-        {
-          if (hot1_target > 20)
-            hot1_target--;                      // 限制最小温度
-          OLED_ShowNumberSelector(hot1_target); // 更新数字选择器
-        }
-      }
-
-      // 长按处理
-      if (key2_pressed)
-      {
-        key2_long_press_cnt++;
-
-        if (key2_long_press_cnt >= KEY_LONG_PRESS_TIME)
-        {
-          key2_repeat_cnt++;
-          if (key2_repeat_cnt >= KEY_LONG_PRESS_REPEAT)
+          else
           {
-            key2_repeat_cnt = 0;
-
-            if (menu_level == 0)
-            {
-              if (current_cursor <= 1)
-              {
-                current_cursor = (current_cursor == 0) ? 1 : 0;
-                ShowCursor(current_cursor);
-              }
-            }
-            else if (menu_level == 1 && current_cursor == 0)
-            {
-              if (hot1_target > 20)
-              {
-                hot1_target--;                        // 限制最小温度
-                OLED_ShowNumberSelector(hot1_target); // 更新数字选择器
-              }
-            }
+            if (hot2_target > 0)
+              hot2_target--;
+            OLED_ShowNum(112, 35, hot2_target, 2, OLED_6X8);
           }
+          OLED_Update();
+          blink_state = 1;
+          blink_cnt = 0;
+        }
+        else if (menu_level == 0)
+        {
+          // 主菜单中HOT1和HOT2循环切换
+          current_cursor = (current_cursor == 0) ? 3 : 0; // 在0和3之间循环
+          ShowCursor(current_cursor);
+        }
+        else
+        {
+          // 子菜单中在Target和Reality之间循环切换
+          if (current_hot == 0) // HOT1子菜单
+          {
+            current_cursor = (current_cursor == 1) ? 2 : 1; // 在1和2之间循环
+          }
+          else // HOT2子菜单
+          {
+            current_cursor = (current_cursor == 4) ? 5 : 4; // 在4和5之间循环
+          }
+          ShowCursor(current_cursor);
         }
       }
     }
     else
     {
-      if (key2_pressed)
-      {
-        key2_pressed = 0;
-      }
+      key2_pressed = 0;
       key2_filter = 0;
-      key2_long_press_cnt = 0;
-      key2_repeat_cnt = 0;
     }
 
     adc_sample_cnt++;
@@ -1082,35 +832,39 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 
       // 打印滤波后的值
       uint16_t filtered_adc4 = LAverageFilter(4);
+      uint16_t filtered_adc5 = LAverageFilter(5);
 
       // 打印计算的电阻值
       NTC1_R = ADC_GetResistance(filtered_adc4);
+      NTC2_R = ADC_GetResistance(filtered_adc5);
 
       // 计算温度值
       hot1_reality = Resistance2Temerature(NTC1_R);
+      hot2_reality = Resistance2Temerature(NTC2_R);
 
       // // 更新PID控制
-      PWM1 = (uint16_t)PID_calculate(&PID_Ctrl1, hot1_target, hot1_reality);
+       PWM1 = (uint16_t)PID_calculate(&PID_Ctrl1, hot1_target, hot1_reality);
+//       PWM2 = (uint16_t)PID_calculate(&PID_Ctrl2, hot2_target, hot2_reality);
 
       // // 更新PWM输出
-      __HAL_TIM_SetCompare(&htim1, TIM_CHANNEL_1, PWM1);
+       __HAL_TIM_SetCompare(&htim1, TIM_CHANNEL_1, PWM1);
+//       __HAL_TIM_SetCompare(&htim1, TIM_CHANNEL_2, PWM2);
+    }
+    // OLED刷新控制
+    oled_refresh_cnt++;
+    if (oled_refresh_cnt >= OLED_REFRESH_PERIOD)
+    {
+      oled_refresh_cnt = 0;
 
-      // 更新曲线数据和显示
-      if (is_reality_page)
+      // 更新OLED显示的实际温度值
+      if (!param_editing) // 如果不在参数编辑模式下
       {
-        curve_update_cnt++;
-        if (curve_update_cnt >= CURVE_UPDATE_PERIOD)
-        {
-          curve_update_cnt = 0;
-
-          // 更新历史数据
-          temp_history[curve_index] = hot1_reality;
-          target_history[curve_index] = hot1_target;
-          curve_index = (curve_index + 1) % CURVE_POINTS;
-
-          // 重新绘制温度曲线
-          OLED_DrawTempCurve();
-        }
+        // 更新HOT1的实际温度显示
+        OLED_ShowNum(50, 50, hot1_reality, 2, OLED_6X8);
+        // 更新HOT2的实际温度显示
+        OLED_ShowNum(112, 50, hot2_reality, 2, OLED_6X8);
+        // 更新显示到OLED屏幕
+        OLED_Update();
       }
     }
     // 串口打印控制
@@ -1118,14 +872,28 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     if (print_tick >= 33) // 约1秒打印一次
     {
       print_tick = 0; // 重置打印计数器
-      sprintf(message, "Temperature1: %.2f,%d\r\n", hot1_reality, hot1_target);
+      sprintf(message, "Temperature1: %.2f,%d,%.2f,%d\r\n", hot1_reality, hot1_target, hot2_reality, hot2_target);
       HAL_UART_Transmit(&huart1, (uint8_t *)message, strlen(message), HAL_MAX_DELAY); // 发送数据到串口
-      sprintf(message, "current: %d,%d\r\n", adc_buf[0], adc_buf[1]);
-      HAL_UART_Transmit(&huart1, (uint8_t *)message, strlen(message), HAL_MAX_DELAY); // 发送数据到串口
+      // sprintf(message, "Reality Temperature2: %.2f\r\n", hot2_reality);
+      // HAL_UART_Transmit(&huart1, (uint8_t *)message, strlen(message), HAL_MAX_DELAY); // 发送数据到串口
+      // sprintf(message, "Target Temperature1: %d\r\n", hot1_target);
+      // HAL_UART_Transmit(&huart1, (uint8_t *)message, strlen(message), HAL_MAX_DELAY);
+      // sprintf(message, "Target Temperature2: %d\r\n", hot2_target);
+      // HAL_UART_Transmit(&huart1, (uint8_t *)message, strlen(message), HAL_MAX_DELAY); // 发送数据到串口
     }
   }
 }
 
+// // DMA完成回调函数中处理ADC数据
+// void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc)
+// {
+//   if (hadc->Instance == ADC1)
+//   {
+//     sprintf(message, "ADC1 DMA complete: %d %d %d %d %d %d %d %d\r\n",
+//             adc_buf[0], adc_buf[1], adc_buf[2], adc_buf[3], adc_buf[4], adc_buf[5], adc_buf[6], adc_buf[7]);
+//     HAL_UART_Transmit(&huart1, (uint8_t *)message, strlen(message), HAL_MAX_DELAY); // 发送数据到串口
+//   }
+// }
 /*启动了DMA连续模式就不用使用中断回调了*/
 
 /* USER CODE END 4 */

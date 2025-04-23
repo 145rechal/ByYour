@@ -1294,38 +1294,3 @@ void OLED_DrawArc(uint8_t X, uint8_t Y, uint8_t Radius, int16_t StartAngle, int1
 		}
 	}
 }
-
-/**
- * 函    数：OLED清除指定点
- * 参    数：X 指定点的横坐标，范围：0~127
- * 参    数：Y 指定点的纵坐标，范围：0~63
- * 返 回 值：无
- * 说    明：调用此函数后，要想真正地呈现在屏幕上，还需调用更新函数
- */
-void OLED_ClearPoint(uint8_t X, uint8_t Y)
-{
-	/*参数检查，保证指定位置不会超出屏幕范围*/
-	if (X > 127)
-	{
-		return;
-	}
-	if (Y > 63)
-	{
-		return;
-	}
-
-	/*将显存数组指定位置的一个Bit数据置0*/
-	OLED_DisplayBuf[Y / 8][X] &= ~(0x01 << (Y % 8));
-}
-
-void OLED_FillRect(uint8_t x, uint8_t y, uint8_t width, uint8_t height)
-{
-	// 使用已有函数填充矩形区域
-	for (uint8_t i = 0; i < height; i++)
-	{
-		for (uint8_t j = 0; j < width; j++)
-		{
-			OLED_DrawPoint(x + j, y + i);
-		}
-	}
-}

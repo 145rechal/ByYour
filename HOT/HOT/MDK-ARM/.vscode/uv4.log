@@ -1,3 +1,4 @@
 Load "HOT\\HOT.axf" 
-Erase Done.Programming Done.Verify OK.Application running ...
-Flash Load finished at 10:46:08
+Erase Failed!RDDI-DAP Error
+Error: Flash Download failed  -  "Cortex-M0+"
+Flash Load finished at 09:05:36
